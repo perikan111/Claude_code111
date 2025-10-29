@@ -1,5 +1,5 @@
 /**
- * WebLLM Setup with Microsoft Phi-4
+ * WebLLM Setup with Microsoft Phi-3.5
  * ブラウザ内でLLMを実行
  */
 
@@ -7,6 +7,18 @@ import * as webllm from "https://esm.run/@mlc-ai/web-llm";
 
 let engine = null;
 let isModelLoaded = false;
+
+// 使用可能なモデルのリスト
+const AVAILABLE_MODELS = {
+    'phi-3.5': 'Phi-3.5-mini-instruct-q4f16_1-MLC',  // 推奨: 高速・高品質
+    'phi-3': 'Phi-3-mini-4k-instruct-q4f16_1-MLC',
+    'llama-3.2-3b': 'Llama-3.2-3B-Instruct-q4f16_1-MLC',
+    'llama-3.2-1b': 'Llama-3.2-1B-Instruct-q4f16_1-MLC',
+    'qwen-0.5b': 'Qwen2.5-0.5B-Instruct-q4f16_1-MLC'  // 最軽量
+};
+
+// 使用するモデル（変更可能）
+const SELECTED_MODEL = AVAILABLE_MODELS['phi-3.5'];
 
 /**
  * 進捗表示の更新
@@ -27,15 +39,17 @@ function updateProgress(message, progress = null) {
 }
 
 /**
- * WebLLMの初期化とPhi-4モデルのロード
+ * WebLLMの初期化
  */
 export async function initializeWebLLM() {
     try {
         updateProgress('WebLLMエンジンを初期化中...', 0);
 
+        console.log('Loading model:', SELECTED_MODEL);
+
         // WebLLMエンジンの作成
         engine = await webllm.CreateMLCEngine(
-            "Phi-4", // Microsoft Phi-4モデル
+            SELECTED_MODEL,
             {
                 initProgressCallback: (progress) => {
                     const percent = progress.progress * 100;
@@ -48,7 +62,7 @@ export async function initializeWebLLM() {
         isModelLoaded = true;
         updateProgress('モデルのロード完了！', 100);
 
-        console.log('WebLLM initialized successfully with Phi-4');
+        console.log('WebLLM initialized successfully with', SELECTED_MODEL);
 
         // UI更新
         setTimeout(() => {
