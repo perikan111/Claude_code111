@@ -1,0 +1,10 @@
+# Google Concordia and dependencies
+gdm-concordia>=2.0.0
+
+# AI Model APIs (choose one or both)
+anthropic>=0.25.0
+openai>=1.0.0
+
+# Additional dependencies
+numpy>=1.24.0
+sentence-transformers>=2.2.0
