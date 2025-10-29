@@ -2,7 +2,9 @@
 
 **完全ブラウザ内実行のTRPGゲームマスターシステム**
 
-WebLLM（Microsoft Phi-3.5）とブラウザ内RAGを使用し、サーバー不要で動作します。設定資料やルールを参照しながら自然な会話でTRPGセッションを進行します。
+WebLLM（Microsoft Phi-4 Mini）とブラウザ内RAGを使用し、サーバー不要で動作します。設定資料やルールを参照しながら自然な会話でTRPGセッションを進行します。
+
+> **💡 スマートモデル選択**: Phi-4が利用可能な場合は自動的に使用し、利用できない場合はPhi-3.5にフォールバックします。
 
 ## アーキテクチャ
 
@@ -10,14 +12,14 @@ WebLLM（Microsoft Phi-3.5）とブラウザ内RAGを使用し、サーバー不
 [GitHub Pages - 静的ホスティング]
          ↓
 [ブラウザ内で完結]
-  ├── WebLLM (Microsoft Phi-3.5)
+  ├── WebLLM (Microsoft Phi-4 Mini / Phi-3.5)
   ├── ブラウザ内ベクターストア
   └── TF-IDF埋め込み
 ```
 
 ### コンポーネント
 
-#### 1. WebLLM + Microsoft Phi-3.5
+#### 1. WebLLM + Microsoft Phi-4 Mini
 - ブラウザ内でLLMを実行（WebGPU使用）
 - サーバー・API不要
 - 完全プライバシー保護
@@ -31,7 +33,7 @@ WebLLM（Microsoft Phi-3.5）とブラウザ内RAGを使用し、サーバー不
 #### 3. RAGフロー
 - ユーザー入力 → 関連ドキュメント検索
 - 検索結果 → コンテキスト構築
-- Phi-3.5 → GM応答生成
+- Phi-4 / Phi-3.5 → GM応答生成
 
 ## データフロー（RAGの動作）
 
@@ -39,7 +41,7 @@ WebLLM（Microsoft Phi-3.5）とブラウザ内RAGを使用し、サーバー不
 2. **埋め込み生成** → TF-IDFでクエリをベクトル化
 3. **ベクター検索** → メモリ内ストアから類似文書取得
 4. **コンテキスト構築** → 検索結果を整形
-5. **応答生成** → WebLLM (Phi-3.5) でGM応答生成
+5. **応答生成** → WebLLM (Phi-4 / Phi-3.5) でGM応答生成
 6. **表示** → チャットUIに表示
 
 ## プロジェクト構造
@@ -99,7 +101,7 @@ GM: 酒場には冒険者が数人います。話しかけるなら
 ✅ **プライバシー保護** - データはブラウザ内のみ
 ✅ **オフライン対応** - モデルダウンロード後は接続不要
 ✅ **RAGで正確な応答** - 設定資料を検索して参照
-✅ **最新AI** - Microsoft Phi-3.5モデル使用
+✅ **最新AI** - Microsoft Phi-4 Miniモデル使用（自動フォールバック付き）
 ✅ **高速** - WebGPUによる高速推論
 
 ## 今後の拡張例
@@ -119,11 +121,12 @@ GM: 酒場には冒険者が数人います。話しかけるなら
 
 ## 初回起動について
 
-初回アクセス時は**Microsoft Phi-3.5モデル**（約2.5GB）をダウンロードします。
+初回アクセス時は**Microsoft Phi-4 Miniモデル**（約2.5GB）をダウンロードします。
 
 - ダウンロード時間: 光回線で2〜5分程度
 - ブラウザキャッシュに保存されます
 - 2回目以降は高速起動（数秒）
+- Phi-4が利用できない場合、自動的にPhi-3.5にフォールバックします
 
 ## 開発
 
@@ -158,5 +161,7 @@ MIT
 ## 参考リンク
 
 - [WebLLM](https://webllm.mlc.ai/)
+- [Microsoft Phi-4 Mini](https://huggingface.co/microsoft/Phi-4-mini-instruct)
+- [MLC-AI Phi-4 (WebLLM対応)](https://huggingface.co/mlc-ai/Phi-4-mini-instruct-q4f16_1-MLC)
 - [Microsoft Phi-3.5](https://huggingface.co/microsoft/Phi-3.5-mini-instruct)
 - [WebGPU](https://www.w3.org/TR/webgpu/)

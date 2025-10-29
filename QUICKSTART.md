@@ -54,7 +54,8 @@ https://<YOUR_USERNAME>.github.io/<REPO_NAME>/
 初回アクセス時は以下の画面が表示されます：
 
 1. **「モデルを読み込んでいます...」**
-   - Microsoft Phi-3.5モデル（約2.5GB）をダウンロード
+   - Microsoft Phi-4 Miniモデル（約2.5GB）をダウンロード
+   - Phi-4が利用できない場合、自動的にPhi-3.5を使用
    - 光回線で2〜5分程度
    - プログレスバーで進捗確認
 
@@ -196,7 +197,7 @@ export const trpgDocuments = [
 ### 日本語がおかしい
 
 **解決策：**
-- Phi-3.5は多言語対応ですが、英語が最適
+- Phi-4は多言語対応ですが、英語が最適
 - プロンプトを調整してください
 
 ---
@@ -206,7 +207,8 @@ export const trpgDocuments = [
 ### 学習リソース
 
 - [WebLLM公式ドキュメント](https://webllm.mlc.ai/)
-- [Microsoft Phi-3.5モデル](https://huggingface.co/microsoft/Phi-3.5-mini-instruct)
+- [Microsoft Phi-4 Miniモデル](https://huggingface.co/microsoft/Phi-4-mini-instruct)
+- [MLC-AI Phi-4 (WebLLM対応)](https://huggingface.co/mlc-ai/Phi-4-mini-instruct-q4f16_1-MLC)
 - [WebGPU入門](https://www.w3.org/TR/webgpu/)
 
 ### 機能拡張アイデア

@@ -1,5 +1,5 @@
 /**
- * WebLLM Setup with Microsoft Phi-3.5
+ * WebLLM Setup with Microsoft Phi-4
  * ブラウザ内でLLMを実行
  */
 
@@ -7,6 +7,23 @@ import * as webllm from "https://esm.run/@mlc-ai/web-llm";
 
 let engine = null;
 let isModelLoaded = false;
+
+// モデル設定
+const MODEL_CONFIG = {
+    // 優先度順で試行
+    models: [
+        {
+            id: "Phi-4-mini-instruct-q4f16_1-MLC",
+            name: "Phi-4",
+            description: "Microsoft Phi-4 Mini (最新)"
+        },
+        {
+            id: "Phi-3.5-mini-instruct-q4f16_1-MLC",
+            name: "Phi-3.5",
+            description: "Microsoft Phi-3.5 Mini (フォールバック)"
+        }
+    ]
+};
 
 /**
  * 進捗表示の更新
@@ -27,56 +44,79 @@ function updateProgress(message, progress = null) {
 }
 
 /**
- * WebLLMの初期化とPhi-3.5モデルのロード
+ * WebLLMの初期化とPhi-4モデルのロード（フォールバック付き）
  */
 export async function initializeWebLLM() {
-    try {
-        updateProgress('WebLLMエンジンを初期化中...', 0);
+    let lastError = null;
 
-        // WebLLMエンジンの作成
-        engine = await webllm.CreateMLCEngine(
-            "Phi-3.5-mini-instruct-q4f16_1-MLC", // Microsoft Phi-3.5モデル
-            {
-                initProgressCallback: (progress) => {
-                    const percent = progress.progress * 100;
-                    updateProgress(progress.text, percent);
-                    console.log('Init progress:', progress);
+    // 優先度順にモデルを試行
+    for (const modelConfig of MODEL_CONFIG.models) {
+        try {
+            console.log(`Trying to load model: ${modelConfig.id} (${modelConfig.name})`);
+            updateProgress(`${modelConfig.name}モデルを読み込み中...`, 0);
+
+            // WebLLMエンジンの作成
+            engine = await webllm.CreateMLCEngine(
+                modelConfig.id,
+                {
+                    initProgressCallback: (progress) => {
+                        const percent = progress.progress * 100;
+                        updateProgress(progress.text, percent);
+                        console.log('Init progress:', progress);
+                    }
                 }
+            );
+
+            // 成功した場合
+            isModelLoaded = true;
+            updateProgress('モデルのロード完了！', 100);
+            console.log(`WebLLM initialized successfully with ${modelConfig.name}`);
+
+            // モデル名をUIに反映
+            const modelNameElement = document.getElementById('model-name');
+            if (modelNameElement) {
+                modelNameElement.textContent = `Microsoft ${modelConfig.name}`;
             }
-        );
 
-        isModelLoaded = true;
-        updateProgress('モデルのロード完了！', 100);
+            // UI更新
+            setTimeout(() => {
+                document.getElementById('initialization').style.display = 'none';
+                document.getElementById('chat-container').style.display = 'block';
+                document.getElementById('input-area').style.display = 'flex';
+                document.getElementById('user-input').disabled = false;
+                document.getElementById('send-btn').disabled = false;
 
-        console.log('WebLLM initialized successfully with Phi-3.5');
+                const statusBadge = document.getElementById('model-status');
+                statusBadge.textContent = '準備完了';
+                statusBadge.classList.remove('loading');
+                statusBadge.classList.add('ready');
+            }, 500);
 
-        // UI更新
-        setTimeout(() => {
-            document.getElementById('initialization').style.display = 'none';
-            document.getElementById('chat-container').style.display = 'block';
-            document.getElementById('input-area').style.display = 'flex';
-            document.getElementById('user-input').disabled = false;
-            document.getElementById('send-btn').disabled = false;
+            return engine;
 
-            const statusBadge = document.getElementById('model-status');
-            statusBadge.textContent = '準備完了';
-            statusBadge.classList.remove('loading');
-            statusBadge.classList.add('ready');
-        }, 500);
+        } catch (error) {
+            // このモデルの読み込みに失敗
+            console.warn(`Failed to load ${modelConfig.name}:`, error.message);
+            lastError = error;
 
-        return engine;
-
-    } catch (error) {
-        console.error('WebLLM initialization error:', error);
-        updateProgress(`エラー: ${error.message}`, 0);
-
-        const statusBadge = document.getElementById('model-status');
-        statusBadge.textContent = 'エラー';
-        statusBadge.classList.remove('loading');
-        statusBadge.classList.add('error');
-
-        throw error;
+            // 次のモデルを試す（forループ継続）
+            if (modelConfig !== MODEL_CONFIG.models[MODEL_CONFIG.models.length - 1]) {
+                console.log(`Trying fallback model...`);
+                continue;
+            }
+        }
     }
+
+    // すべてのモデルで失敗した場合
+    console.error('All models failed to load');
+    updateProgress(`エラー: すべてのモデルの読み込みに失敗しました`, 0);
+
+    const statusBadge = document.getElementById('model-status');
+    statusBadge.textContent = 'エラー';
+    statusBadge.classList.remove('loading');
+    statusBadge.classList.add('error');
+
+    throw lastError || new Error('Failed to load any model');
 }
 
 /**

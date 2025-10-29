@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI TRPG GM - Powered by WebLLM & Phi-3.5</title>
+    <title>AI TRPG GM - Powered by WebLLM & Phi-4</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
         <header>
             <h1>🎲 AI TRPG Game Master</h1>
-            <p class="subtitle">Powered by WebLLM (Microsoft Phi-3.5) + LangChain</p>
+            <p class="subtitle">Powered by WebLLM (Microsoft Phi-4) + LangChain</p>
             <div class="tech-stack">
                 <span class="badge">ブラウザ完結</span>
                 <span class="badge">サーバー不要</span>
@@ -21,7 +21,7 @@
         <div class="model-status">
             <div class="status-item">
                 <span class="label">モデル:</span>
-                <span id="model-name">Microsoft Phi-3.5</span>
+                <span id="model-name">Microsoft Phi-4 (自動検出)</span>
             </div>
             <div class="status-item">
                 <span class="label">状態:</span>
@@ -81,7 +81,7 @@
                 <div class="info-content">
                     <h4>技術スタック</h4>
                     <ul>
-                        <li><strong>LLM:</strong> Microsoft Phi-3.5 (WebLLM)</li>
+                        <li><strong>LLM:</strong> Microsoft Phi-4 Mini (WebLLM) - フォールバック: Phi-3.5</li>
                         <li><strong>Framework:</strong> LangChain.js</li>
                         <li><strong>Vector Store:</strong> ブラウザ内メモリ</li>
                         <li><strong>Embeddings:</strong> Transformers.js</li>
