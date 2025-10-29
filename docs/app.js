@@ -1,79 +1,218 @@
 /**
- * TRPG GM Frontend
- * Cloudflare Workerと通信してチャットを実現
+ * Main Application
+ * TRPG GM with WebLLM + Browser-based RAG
  */
 
-// Cloudflare WorkerのURL（デプロイ後に更新してください）
-const WORKER_URL = 'http://localhost:8787'; // ローカル開発用
-// const WORKER_URL = 'https://your-worker.your-subdomain.workers.dev'; // 本番用
+import { generateText, generateTextStream, isReady } from './lib/webllm-setup.js';
+import { VectorStore, SimpleEmbedder } from './lib/vectorstore.js';
+import { trpgDocuments, getAllDocumentTexts } from './data/documents.js';
 
-// 状態管理
-let currentModel = '8b';
-let isLoading = false;
+// グローバル状態
+let vectorStore = null;
+let embedder = null;
+let isInitialized = false;
+let isGenerating = false;
 
 // DOM要素
 const chatContainer = document.getElementById('chat-container');
 const userInput = document.getElementById('user-input');
 const sendBtn = document.getElementById('send-btn');
-const statusIndicator = document.getElementById('status-indicator');
-const statusText = document.getElementById('status-text');
-const model8bBtn = document.getElementById('model-8b');
-const model70bBtn = document.getElementById('model-70b');
 
 /**
- * 初期化
+ * ベクターストアの初期化
  */
-function init() {
-    // イベントリスナー
-    sendBtn.addEventListener('click', handleSend);
-    userInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            handleSend();
-        }
-    });
+async function initializeVectorStore() {
+    console.log('Initializing vector store...');
 
-    model8bBtn.addEventListener('click', () => switchModel('8b'));
-    model70bBtn.addEventListener('click', () => switchModel('70b'));
+    // Embedderの作成
+    embedder = new SimpleEmbedder();
 
-    // Worker接続テスト
-    testConnection();
+    // ドキュメントテキストの取得
+    const documentTexts = getAllDocumentTexts();
+
+    // 埋め込みの生成
+    console.log(`Generating embeddings for ${documentTexts.length} documents...`);
+    const embeddings = embedder.embedDocuments(documentTexts);
+
+    // VectorStoreの作成
+    vectorStore = new VectorStore();
+    vectorStore.addDocuments(trpgDocuments, embeddings);
+
+    console.log(`Vector store initialized with ${vectorStore.size()} documents`);
+    isInitialized = true;
 }
 
 /**
- * モデル切替
+ * RAG処理：関連ドキュメントの検索
  */
-function switchModel(model) {
-    currentModel = model;
-
-    // UIの更新
-    document.querySelectorAll('.model-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-
-    if (model === '8b') {
-        model8bBtn.classList.add('active');
-    } else {
-        model70bBtn.classList.add('active');
+function searchRelevantDocuments(query, topK = 3) {
+    if (!vectorStore || !embedder) {
+        console.warn('Vector store not initialized');
+        return [];
     }
 
-    updateStatus(`モデル: ${model.toUpperCase()}`);
+    // クエリを埋め込みベクトルに変換
+    const queryEmbedding = embedder.embed(query);
+
+    // 類似検索
+    const results = vectorStore.search(queryEmbedding, topK);
+
+    console.log('Search results:', results.map(r => ({
+        text: r.document.text.substring(0, 50) + '...',
+        similarity: r.similarity.toFixed(3)
+    })));
+
+    return results;
 }
 
 /**
- * Worker接続テスト
+ * GM応答の生成
  */
-async function testConnection() {
+async function generateGMResponse(userMessage) {
+    // 1. 関連ドキュメントの検索
+    const searchResults = searchRelevantDocuments(userMessage, 3);
+
+    // 2. コンテキストの構築
+    let context = '';
+    if (searchResults.length > 0) {
+        context = '【参照情報】\n';
+        searchResults.forEach((result, index) => {
+            context += `${index + 1}. ${result.document.text}\n`;
+        });
+        context += '\n';
+    }
+
+    // 3. システムプロンプト
+    const systemPrompt = `あなたは経験豊富なTRPGのゲームマスター（GM）です。
+
+【役割】
+- プレイヤーの行動に対して、世界がどう反応するかを描写する
+- 雰囲気のある自然な文章で語る
+- 選択肢を提示したり、状況を詳しく説明する
+- ルールや設定に基づいて一貫性のある進行をする
+
+【注意点】
+- プレイヤーの代わりに行動を決定しない
+- 過度に詳しい説明は避け、適度な長さを保つ（2〜3段落）
+- 臨場感のある描写を心がける
+- 提供された参照情報を活用する`;
+
+    // 4. ユーザープロンプト
+    const userPrompt = `${context}【プレイヤーの行動】
+${userMessage}
+
+【GMとしての応答】`;
+
+    // 5. LLMで生成
     try {
-        const response = await fetch(`${WORKER_URL}/health`);
-        if (response.ok) {
-            updateStatus('準備完了', 'ready');
-        } else {
-            updateStatus('Worker接続エラー', 'error');
-        }
+        const response = await generateText(userPrompt, {
+            systemPrompt,
+            temperature: 0.8,
+            maxTokens: 400
+        });
+
+        return response;
     } catch (error) {
-        console.error('Connection test failed:', error);
-        updateStatus('オフライン（Workerを起動してください）', 'error');
+        console.error('Generation error:', error);
+        throw error;
+    }
+}
+
+/**
+ * メッセージを追加
+ */
+function addMessage(type, content, streaming = false) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${type}`;
+
+    const headerDiv = document.createElement('div');
+    headerDiv.className = 'message-header';
+
+    const speaker = document.createElement('span');
+    speaker.className = 'speaker';
+    speaker.textContent = type === 'gm' ? '🎭 GM' : '⚔️ プレイヤー';
+
+    const timestamp = document.createElement('span');
+    timestamp.className = 'timestamp';
+    timestamp.textContent = new Date().toLocaleTimeString('ja-JP', {
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+
+    headerDiv.appendChild(speaker);
+    headerDiv.appendChild(timestamp);
+
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'message-content';
+
+    if (streaming) {
+        // ストリーミング用の空のコンテナ
+        contentDiv.id = 'streaming-content';
+    } else {
+        // 段落に分割
+        const paragraphs = content.split('\n').filter(p => p.trim());
+        paragraphs.forEach(paragraph => {
+            const p = document.createElement('p');
+            p.textContent = paragraph;
+            contentDiv.appendChild(p);
+        });
+    }
+
+    messageDiv.appendChild(headerDiv);
+    messageDiv.appendChild(contentDiv);
+
+    chatContainer.appendChild(messageDiv);
+
+    // スクロール
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+
+    return contentDiv;
+}
+
+/**
+ * ローディングインジケーターを表示
+ */
+function showLoadingIndicator() {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message gm';
+    messageDiv.id = 'loading-indicator';
+
+    const headerDiv = document.createElement('div');
+    headerDiv.className = 'message-header';
+
+    const speaker = document.createElement('span');
+    speaker.className = 'speaker';
+    speaker.textContent = '🎭 GM';
+
+    headerDiv.appendChild(speaker);
+
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'message-content loading';
+
+    const typingIndicator = document.createElement('div');
+    typingIndicator.className = 'typing-indicator';
+    typingIndicator.innerHTML = '<span></span><span></span><span></span>';
+
+    const text = document.createElement('span');
+    text.textContent = '考え中...';
+
+    contentDiv.appendChild(typingIndicator);
+    contentDiv.appendChild(text);
+
+    messageDiv.appendChild(headerDiv);
+    messageDiv.appendChild(contentDiv);
+
+    chatContainer.appendChild(messageDiv);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+}
+
+/**
+ * ローディングインジケーターを削除
+ */
+function removeLoadingIndicator() {
+    const indicator = document.getElementById('loading-indicator');
+    if (indicator) {
+        indicator.remove();
     }
 }
 
@@ -83,7 +222,17 @@ async function testConnection() {
 async function handleSend() {
     const message = userInput.value.trim();
 
-    if (!message || isLoading) {
+    if (!message || isGenerating) {
+        return;
+    }
+
+    if (!isReady()) {
+        alert('モデルがまだロードされていません。しばらくお待ちください。');
+        return;
+    }
+
+    if (!isInitialized) {
+        alert('ベクターストアを初期化中です。しばらくお待ちください。');
         return;
     }
 
@@ -94,120 +243,91 @@ async function handleSend() {
     userInput.value = '';
 
     // ローディング開始
-    setLoading(true);
+    isGenerating = true;
+    sendBtn.disabled = true;
+    userInput.disabled = true;
+    showLoadingIndicator();
 
     try {
-        // Workerにリクエスト
-        const response = await fetch(`${WORKER_URL}/rag`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                message,
-                model: currentModel
-            })
-        });
+        // GM応答を生成
+        const response = await generateGMResponse(message);
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
+        // ローディング終了
+        removeLoadingIndicator();
 
-        const data = await response.json();
-
-        // GMの応答を表示
-        addMessage('gm', data.response);
-
-        // デバッグ情報
-        console.log('Search Query:', data.searchQuery);
-        console.log('Results Found:', data.resultsFound);
+        // GM応答を表示
+        addMessage('gm', response);
 
     } catch (error) {
-        console.error('Request failed:', error);
-        addMessage('error', `エラーが発生しました: ${error.message}`);
-        updateStatus('エラー', 'error');
-    } finally {
-        setLoading(false);
-    }
-}
+        console.error('Error generating response:', error);
+        removeLoadingIndicator();
 
-/**
- * メッセージを追加
- */
-function addMessage(type, content) {
-    const messageDiv = document.createElement('div');
-    messageDiv.className = `message ${type}`;
+        // エラーメッセージを表示
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'message gm';
 
-    const headerDiv = document.createElement('div');
-    headerDiv.className = 'message-header';
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'message-content error-message';
 
-    const speaker = document.createElement('span');
-    speaker.className = 'speaker';
-
-    if (type === 'gm') {
-        speaker.textContent = '🎭 GM';
-    } else if (type === 'player') {
-        speaker.textContent = '⚔️ プレイヤー';
-    } else {
-        speaker.textContent = '⚠️ システム';
-    }
-
-    headerDiv.appendChild(speaker);
-
-    const contentDiv = document.createElement('div');
-    contentDiv.className = 'message-content';
-
-    if (type === 'error') {
-        contentDiv.classList.add('error-message');
-    }
-
-    // 段落に分割
-    const paragraphs = content.split('\n').filter(p => p.trim());
-    paragraphs.forEach(paragraph => {
         const p = document.createElement('p');
-        p.textContent = paragraph;
+        p.textContent = `エラーが発生しました: ${error.message}`;
         contentDiv.appendChild(p);
+
+        const p2 = document.createElement('p');
+        p2.textContent = 'もう一度お試しください。';
+        contentDiv.appendChild(p2);
+
+        errorDiv.appendChild(contentDiv);
+        chatContainer.appendChild(errorDiv);
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    } finally {
+        isGenerating = false;
+        sendBtn.disabled = false;
+        userInput.disabled = false;
+        userInput.focus();
+    }
+}
+
+/**
+ * イベントリスナーの設定
+ */
+function setupEventListeners() {
+    // 送信ボタン
+    sendBtn.addEventListener('click', handleSend);
+
+    // Enterキー（Shift+Enterは改行）
+    userInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleSend();
+        }
     });
-
-    messageDiv.appendChild(headerDiv);
-    messageDiv.appendChild(contentDiv);
-
-    chatContainer.appendChild(messageDiv);
-
-    // スクロール
-    chatContainer.scrollTop = chatContainer.scrollHeight;
 }
 
 /**
- * ローディング状態の設定
+ * 初期化
  */
-function setLoading(loading) {
-    isLoading = loading;
-    sendBtn.disabled = loading;
+async function initialize() {
+    console.log('Initializing TRPG GM application...');
 
-    if (loading) {
-        statusIndicator.classList.add('loading');
-        updateStatus('応答生成中...');
-    } else {
-        statusIndicator.classList.remove('loading');
-        updateStatus('準備完了');
-    }
+    // イベントリスナー設定
+    setupEventListeners();
+
+    // ベクターストアの初期化
+    await initializeVectorStore();
+
+    console.log('Application initialized successfully');
 }
 
-/**
- * ステータス更新
- */
-function updateStatus(text, state = 'ready') {
-    statusText.textContent = text;
+// アプリケーション起動
+initialize().catch(error => {
+    console.error('Failed to initialize application:', error);
+});
 
-    if (state === 'error') {
-        statusIndicator.style.color = 'var(--error-color)';
-    } else if (state === 'ready') {
-        statusIndicator.style.color = 'var(--player-color)';
-    } else {
-        statusIndicator.style.color = 'var(--accent-color)';
-    }
-}
-
-// 初期化実行
-init();
+// デバッグ用のグローバルエクスポート
+window.trpgGM = {
+    searchRelevantDocuments,
+    vectorStore,
+    embedder,
+    isInitialized: () => isInitialized
+};

@@ -3,38 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI TRPG Game Master</title>
+    <title>AI TRPG GM - Powered by WebLLM & Phi-4</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
         <header>
             <h1>🎲 AI TRPG Game Master</h1>
-            <p class="subtitle">Powered by Cloudflare Workers + LangGraph</p>
+            <p class="subtitle">Powered by WebLLM (Microsoft Phi-4) + LangChain</p>
+            <div class="tech-stack">
+                <span class="badge">ブラウザ完結</span>
+                <span class="badge">サーバー不要</span>
+                <span class="badge">完全無料</span>
+            </div>
         </header>
 
-        <div class="controls">
-            <div class="model-selector">
-                <label for="model-toggle">モデル:</label>
-                <div class="toggle-container">
-                    <button id="model-8b" class="model-btn active" data-model="8b">
-                        8B (高速)
-                    </button>
-                    <button id="model-70b" class="model-btn" data-model="70b">
-                        70B (高品質)
-                    </button>
-                </div>
+        <div class="model-status">
+            <div class="status-item">
+                <span class="label">モデル:</span>
+                <span id="model-name">Microsoft Phi-4</span>
             </div>
-            <div class="status">
-                <span id="status-indicator" class="status-indicator">●</span>
-                <span id="status-text">準備完了</span>
+            <div class="status-item">
+                <span class="label">状態:</span>
+                <span id="model-status" class="status-badge loading">初期化中...</span>
+            </div>
+            <div class="status-item">
+                <span class="label">メモリ:</span>
+                <span id="memory-usage">-</span>
             </div>
         </div>
 
-        <div id="chat-container" class="chat-container">
+        <div id="initialization" class="initialization-panel">
+            <div class="init-content">
+                <div class="spinner"></div>
+                <h3>モデルを読み込んでいます...</h3>
+                <p id="init-message">WebLLMを初期化中...</p>
+                <div class="progress-bar">
+                    <div id="progress-fill" class="progress-fill"></div>
+                </div>
+                <p id="progress-text" class="progress-text">0%</p>
+                <div class="init-info">
+                    <p>初回起動時はモデルのダウンロードに数分かかります。</p>
+                    <p>ダウンロード後はブラウザキャッシュに保存され、次回は高速起動します。</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="chat-container" class="chat-container" style="display: none;">
             <div class="message gm">
                 <div class="message-header">
                     <span class="speaker">🎭 GM</span>
+                    <span class="timestamp"></span>
                 </div>
                 <div class="message-content">
                     <p>ようこそ、冒険者よ。</p>
@@ -44,30 +63,51 @@
             </div>
         </div>
 
-        <div class="input-area">
+        <div id="input-area" class="input-area" style="display: none;">
             <textarea
                 id="user-input"
                 placeholder="プレイヤーの行動を入力してください... (例: 城門に近づいて衛兵に話しかける)"
                 rows="3"
+                disabled
             ></textarea>
-            <button id="send-btn" class="send-btn">
+            <button id="send-btn" class="send-btn" disabled>
                 送信
             </button>
         </div>
 
         <div class="info-panel">
             <details>
-                <summary>使い方</summary>
-                <ul>
-                    <li>テキストエリアにプレイヤーの行動を入力</li>
-                    <li>モデルは「8B」（高速）と「70B」（高品質）から選択可能</li>
-                    <li>GMがルールや設定資料を参照して応答します</li>
-                    <li>重要なシーンでは70Bモデルがおすすめ</li>
-                </ul>
+                <summary>システム情報</summary>
+                <div class="info-content">
+                    <h4>技術スタック</h4>
+                    <ul>
+                        <li><strong>LLM:</strong> Microsoft Phi-4 (WebLLM)</li>
+                        <li><strong>Framework:</strong> LangChain.js</li>
+                        <li><strong>Vector Store:</strong> ブラウザ内メモリ</li>
+                        <li><strong>Embeddings:</strong> Transformers.js</li>
+                    </ul>
+                    <h4>特徴</h4>
+                    <ul>
+                        <li>✅ 完全ブラウザ内実行</li>
+                        <li>✅ サーバー・API不要</li>
+                        <li>✅ プライバシー保護</li>
+                        <li>✅ オフライン動作可能</li>
+                    </ul>
+                    <h4>推奨環境</h4>
+                    <ul>
+                        <li>Chrome / Edge 最新版</li>
+                        <li>メモリ: 8GB以上</li>
+                        <li>初回: 高速なインターネット接続</li>
+                    </ul>
+                </div>
             </details>
         </div>
     </div>
 
-    <script src="app.js"></script>
+    <!-- WebLLM -->
+    <script type="module" src="lib/webllm-setup.js"></script>
+
+    <!-- Main App -->
+    <script type="module" src="app.js"></script>
 </body>
 </html>

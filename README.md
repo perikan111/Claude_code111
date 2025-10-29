@@ -1,125 +1,76 @@
 # AI TRPG Game Master
 
-WebベースのTRPGゲームマスターシステム。Cloudflare Workers + LangGraph + Vectorizeを活用し、設定資料やルールを参照しながら自然な会話でTRPGセッションを進行します。
+**完全ブラウザ内実行のTRPGゲームマスターシステム**
+
+WebLLM（Microsoft Phi-4）とブラウザ内RAGを使用し、サーバー不要で動作します。設定資料やルールを参照しながら自然な会話でTRPGセッションを進行します。
 
 ## アーキテクチャ
 
 ```
-[GitHub Pages] ←→ [Cloudflare Workers + LangGraph]
-                            ↓
-                    [Vectorize (検索)]
-                            ↓
-                    [Workers AI (Llama 3.1)]
+[GitHub Pages - 静的ホスティング]
+         ↓
+[ブラウザ内で完結]
+  ├── WebLLM (Microsoft Phi-4)
+  ├── ブラウザ内ベクターストア
+  └── TF-IDF埋め込み
 ```
 
 ### コンポーネント
 
-#### 1. GitHub Pages（フロントエンド）
-- 静的HTML + JavaScriptのチャットUI
-- モデル切替（8B/70B）機能
-- Cloudflare Workers APIへのリクエスト
+#### 1. WebLLM + Microsoft Phi-4
+- ブラウザ内でLLMを実行（WebGPU使用）
+- サーバー・API不要
+- 完全プライバシー保護
+- オフライン動作可能
 
-#### 2. Cloudflare Workers（バックエンド）
-- LangGraphによるRAGフロー制御
-- エンドポイント：
-  - `POST /ingest` - ドキュメント登録
-  - `POST /rag` - 質問応答（GM応答生成）
+#### 2. ブラウザ内ベクターストア
+- JavaScriptによる簡易ベクトル検索
+- TF-IDF埋め込み
+- コサイン類似度による検索
 
-#### 3. LangGraph
-- RAGフロー：検索 → 要約 → 応答生成
-- セッション状態管理
-- 拡張可能な会話制御
-
-#### 4. Cloudflare Vectorize
-- ベクター検索エンジン
-- TRPG設定資料・ルールを埋め込みベクトル化
-- 関連文書の高速検索
-
-#### 5. Workers AI
-- Cloudflare提供のLLM実行環境
-- Llama 3.1（8B/70B）モデル
-- エッジで高速推論
+#### 3. RAGフロー
+- ユーザー入力 → 関連ドキュメント検索
+- 検索結果 → コンテキスト構築
+- Phi-4 → GM応答生成
 
 ## データフロー（RAGの動作）
 
-1. **プレイヤー入力** → フロントエンドでユーザーが発話
-2. **リクエスト送信** → `/rag`エンドポイントへPOST
-3. **LangGraph処理開始** → 検索クエリ生成
-4. **ベクター検索** → Vectorizeから関連文書取得
-5. **文脈要約** → Workers AIで検索結果を要約
-6. **応答生成** → GMとしての応答をLlama 3.1が生成
-7. **応答送信** → ブラウザに返却・表示
+1. **プレイヤー入力** → ブラウザで受付
+2. **埋め込み生成** → TF-IDFでクエリをベクトル化
+3. **ベクター検索** → メモリ内ストアから類似文書取得
+4. **コンテキスト構築** → 検索結果を整形
+5. **応答生成** → WebLLM (Phi-4) でGM応答生成
+6. **表示** → チャットUIに表示
 
 ## プロジェクト構造
 
 ```
-├── worker/                 # Cloudflare Workers
-│   ├── src/
-│   │   ├── index.ts       # メインエントリーポイント
-│   │   ├── langgraph.ts   # LangGraphフロー定義
-│   │   ├── vectorize.ts   # Vectorize統合
-│   │   └── ai.ts          # Workers AI呼び出し
-│   ├── wrangler.toml      # Workers設定
-│   └── package.json
-│
-├── docs/                   # GitHub Pages（フロントエンド）
-│   ├── index.html
-│   ├── style.css
-│   └── app.js
-│
-├── data/                   # TRPG設定資料
-│   ├── world.md           # 世界設定
-│   ├── rules.md           # ルールブック
-│   └── npcs.md            # NPCデータ
-│
-└── scripts/
-    └── ingest.js          # ドキュメント登録スクリプト
+docs/                       # GitHub Pages - すべてここに含まれる
+├── index.html             # メインHTML
+├── style.css              # スタイル
+├── app.js                 # メインアプリケーション
+├── lib/
+│   ├── webllm-setup.js   # WebLLM初期化
+│   └── vectorstore.js    # ブラウザ内ベクターストア
+└── data/
+    └── documents.js      # TRPG設定資料（15件のドキュメント）
 ```
 
-## セットアップ
+## セットアップ（超簡単！）
 
-### 1. Cloudflare アカウント準備
+### GitHub Pagesで公開
 
-1. [Cloudflare Dashboard](https://dash.cloudflare.com/)でアカウント作成
-2. Workers & Pagesを有効化
-3. API Tokenを取得
+1. GitHubリポジトリの **Settings** → **Pages**
+2. Source: **Deploy from a branch**
+3. Branch: **`main`** / **`/docs`**
+4. **Save**
 
-### 2. プロジェクトのデプロイ
-
-```bash
-# Workersディレクトリへ移動
-cd worker
-
-# 依存関係インストール
-npm install
-
-# Vectorizeインデックス作成
-wrangler vectorize create trpg-knowledge --dimensions=768 --metric=cosine
-
-# デプロイ
-wrangler deploy
+数分後、自動デプロイされます：
+```
+https://<YOUR_USERNAME>.github.io/<REPO_NAME>/
 ```
 
-### 3. ドキュメントの登録
-
-```bash
-# サンプルドキュメントを登録
-node scripts/ingest.js
-```
-
-### 4. フロントエンドの設定
-
-`docs/app.js`内のWorkers URLを更新：
-
-```javascript
-const WORKER_URL = 'https://your-worker.your-subdomain.workers.dev';
-```
-
-### 5. GitHub Pagesで公開
-
-1. GitHubリポジトリの Settings > Pages
-2. Source: `main` branch, `/docs` folder
-3. Save → 自動デプロイ
+**それだけです！** サーバー設定、API キー、環境変数など一切不要。
 
 ## 使い方
 
@@ -141,20 +92,15 @@ GM: 酒場には冒険者が数人います。話しかけるなら
 どの人物に近づきますか？
 ```
 
-### モデル切替
-
-- **8Bモデル**: 高速・通常会話向け
-- **70Bモデル**: 高品質・重要シーン向け
-
-UIのトグルで切替可能。
-
 ## 特徴
 
-✅ **ブラウザだけで完結** - インストール不要
-✅ **エッジ実行で高速** - Cloudflare Workersのグローバル配信
+✅ **完全ブラウザ内実行** - サーバー・APIキー不要
+✅ **100%無料** - GitHub Pagesの無料枠で動作
+✅ **プライバシー保護** - データはブラウザ内のみ
+✅ **オフライン対応** - モデルダウンロード後は接続不要
 ✅ **RAGで正確な応答** - 設定資料を検索して参照
-✅ **モデル切替** - 速度と品質のバランス調整
-✅ **拡張性** - LangGraphで機能追加が容易
+✅ **最新AI** - Microsoft Phi-4モデル使用
+✅ **高速** - WebGPUによる高速推論
 
 ## 今後の拡張例
 
@@ -165,20 +111,45 @@ UIのトグルで切替可能。
 - ダイスロール機能
 - キャラクターシート管理
 
+## 推奨環境
+
+- **ブラウザ**: Chrome / Edge 最新版（WebGPU対応）
+- **メモリ**: 8GB以上推奨
+- **初回起動**: 高速インターネット接続（モデルダウンロード）
+
+## 初回起動について
+
+初回アクセス時は**Microsoft Phi-4モデル**（約2.5GB）をダウンロードします。
+
+- ダウンロード時間: 光回線で2〜5分程度
+- ブラウザキャッシュに保存されます
+- 2回目以降は高速起動（数秒）
+
 ## 開発
 
 ### ローカルテスト
 
 ```bash
-cd worker
-npm run dev
+cd docs
+python -m http.server 8000
+# または
+npx serve
 ```
 
-### TypeScript型チェック
+ブラウザで `http://localhost:8000` を開く
 
-```bash
-npm run check
-```
+## トラブルシューティング
+
+### モデルのロードに失敗する
+
+- Chrome/Edgeの最新版を使用していますか？
+- WebGPUが有効ですか？（`chrome://gpu` で確認）
+- メモリは8GB以上ありますか？
+
+### 応答が遅い
+
+- 初回生成は少し時間がかかります
+- GPUが搭載されていない場合は遅くなります
 
 ## ライセンス
 
@@ -186,7 +157,6 @@ MIT
 
 ## 参考リンク
 
-- [Cloudflare Workers](https://workers.cloudflare.com/)
-- [Cloudflare Vectorize](https://developers.cloudflare.com/vectorize/)
-- [Workers AI](https://developers.cloudflare.com/workers-ai/)
-- [LangGraph](https://langchain-ai.github.io/langgraph/)
+- [WebLLM](https://webllm.mlc.ai/)
+- [Microsoft Phi-4](https://huggingface.co/microsoft/phi-4)
+- [WebGPU](https://www.w3.org/TR/webgpu/)
