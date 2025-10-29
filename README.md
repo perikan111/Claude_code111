@@ -10,7 +10,7 @@ WebLLM（Microsoft Phi-3.5 Mini）とブラウザ内RAGを使用し、サーバ�
 [GitHub Pages - 静的ホスティング]
          ↓
 [ブラウザ内で完結]
-  ├── WebLLM (Microsoft Phi-4)
+  ├── WebLLM (Microsoft Phi-3.5 Mini)
   ├── ブラウザ内ベクターストア
   └── TF-IDF埋め込み
 ```
