@@ -1,0 +1,19 @@
+name = "trpg-gm-worker"
+main = "src/index.ts"
+compatibility_date = "2024-10-01"
+
+# Vectorize binding
+[[vectorize]]
+binding = "VECTORIZE"
+index_name = "trpg-knowledge"
+
+# Workers AI binding
+[ai]
+binding = "AI"
+
+# CORS設定
+[env.production]
+vars = { ENVIRONMENT = "production" }
+
+[env.development]
+vars = { ENVIRONMENT = "development" }

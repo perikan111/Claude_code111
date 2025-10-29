@@ -1,0 +1,31 @@
+{
+  "name": "trpg-gm-worker",
+  "version": "1.0.0",
+  "description": "Cloudflare Worker for AI TRPG Game Master with LangGraph and Vectorize",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "check": "tsc --noEmit"
+  },
+  "keywords": [
+    "cloudflare-workers",
+    "langgraph",
+    "vectorize",
+    "trpg",
+    "ai",
+    "rag"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241022.0",
+    "typescript": "^5.3.3",
+    "wrangler": "^3.78.0"
+  },
+  "dependencies": {
+    "@langchain/core": "^0.3.0",
+    "@langchain/langgraph": "^0.2.0",
+    "@langchain/community": "^0.3.0"
+  }
+}

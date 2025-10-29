@@ -1,1 +1,0 @@
-"""Game scenarios for TRPG."""

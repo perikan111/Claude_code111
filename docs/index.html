@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI TRPG Game Master</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎲 AI TRPG Game Master</h1>
+            <p class="subtitle">Powered by Cloudflare Workers + LangGraph</p>
+        </header>
+
+        <div class="controls">
+            <div class="model-selector">
+                <label for="model-toggle">モデル:</label>
+                <div class="toggle-container">
+                    <button id="model-8b" class="model-btn active" data-model="8b">
+                        8B (高速)
+                    </button>
+                    <button id="model-70b" class="model-btn" data-model="70b">
+                        70B (高品質)
+                    </button>
+                </div>
+            </div>
+            <div class="status">
+                <span id="status-indicator" class="status-indicator">●</span>
+                <span id="status-text">準備完了</span>
+            </div>
+        </div>
+
+        <div id="chat-container" class="chat-container">
+            <div class="message gm">
+                <div class="message-header">
+                    <span class="speaker">🎭 GM</span>
+                </div>
+                <div class="message-content">
+                    <p>ようこそ、冒険者よ。</p>
+                    <p>あなたは今、王都グリフォンの入口に立っています。高い城壁の向こうには、賑やかな市場の音が聞こえてきます。</p>
+                    <p>どうしますか？</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="input-area">
+            <textarea
+                id="user-input"
+                placeholder="プレイヤーの行動を入力してください... (例: 城門に近づいて衛兵に話しかける)"
+                rows="3"
+            ></textarea>
+            <button id="send-btn" class="send-btn">
+                送信
+            </button>
+        </div>
+
+        <div class="info-panel">
+            <details>
+                <summary>使い方</summary>
+                <ul>
+                    <li>テキストエリアにプレイヤーの行動を入力</li>
+                    <li>モデルは「8B」（高速）と「70B」（高品質）から選択可能</li>
+                    <li>GMがルールや設定資料を参照して応答します</li>
+                    <li>重要なシーンでは70Bモデルがおすすめ</li>
+                </ul>
+            </details>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
