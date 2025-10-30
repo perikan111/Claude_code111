@@ -10,7 +10,7 @@
     <div class="container">
         <header>
             <h1>🎲 AI TRPG Game Master</h1>
-            <p class="subtitle">Powered by WebLLM (Microsoft Phi-4) + LangChain</p>
+            <p class="subtitle">Powered by WebLLM (Microsoft Phi-3.5) + Browser RAG</p>
             <div class="tech-stack">
                 <span class="badge">ブラウザ完結</span>
                 <span class="badge">サーバー不要</span>
@@ -21,7 +21,7 @@
         <div class="model-status">
             <div class="status-item">
                 <span class="label">モデル:</span>
-                <span id="model-name">Microsoft Phi-4</span>
+                <span id="model-name">Microsoft Phi-3.5 Mini</span>
             </div>
             <div class="status-item">
                 <span class="label">状態:</span>
@@ -81,10 +81,10 @@
                 <div class="info-content">
                     <h4>技術スタック</h4>
                     <ul>
-                        <li><strong>LLM:</strong> Microsoft Phi-4 (WebLLM)</li>
-                        <li><strong>Framework:</strong> LangChain.js</li>
-                        <li><strong>Vector Store:</strong> ブラウザ内メモリ</li>
-                        <li><strong>Embeddings:</strong> Transformers.js</li>
+                        <li><strong>LLM:</strong> Microsoft Phi-3.5 Mini (WebLLM)</li>
+                        <li><strong>RAG:</strong> ブラウザ内ベクターストア</li>
+                        <li><strong>Vector Store:</strong> TF-IDF + コサイン類似度</li>
+                        <li><strong>Embeddings:</strong> シンプルTF-IDF</li>
                     </ul>
                     <h4>特徴</h4>
                     <ul>

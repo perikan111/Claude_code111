@@ -35,7 +35,7 @@ export async function initializeWebLLM() {
 
         // WebLLMエンジンの作成
         engine = await webllm.CreateMLCEngine(
-            "Phi-4", // Microsoft Phi-4モデル
+            "Phi-3.5-mini-instruct-q4f16_1-MLC", // Microsoft Phi-3.5モデル
             {
                 initProgressCallback: (progress) => {
                     const percent = progress.progress * 100;
@@ -48,7 +48,7 @@ export async function initializeWebLLM() {
         isModelLoaded = true;
         updateProgress('モデルのロード完了！', 100);
 
-        console.log('WebLLM initialized successfully with Phi-4');
+        console.log('WebLLM initialized successfully with Phi-3.5');
 
         // UI更新
         setTimeout(() => {

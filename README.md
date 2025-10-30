@@ -2,7 +2,7 @@
 
 **完全ブラウザ内実行のTRPGゲームマスターシステム**
 
-WebLLM（Microsoft Phi-4）とブラウザ内RAGを使用し、サーバー不要で動作します。設定資料やルールを参照しながら自然な会話でTRPGセッションを進行します。
+WebLLM（Microsoft Phi-3.5 Mini）とブラウザ内RAGを使用し、サーバー不要で動作します。設定資料やルールを参照しながら自然な会話でTRPGセッションを進行します。
 
 ## アーキテクチャ
 
@@ -17,7 +17,7 @@ WebLLM（Microsoft Phi-4）とブラウザ内RAGを使用し、サーバー不�
 
 ### コンポーネント
 
-#### 1. WebLLM + Microsoft Phi-4
+#### 1. WebLLM + Microsoft Phi-3.5 Mini
 - ブラウザ内でLLMを実行（WebGPU使用）
 - サーバー・API不要
 - 完全プライバシー保護
@@ -31,7 +31,7 @@ WebLLM（Microsoft Phi-4）とブラウザ内RAGを使用し、サーバー不�
 #### 3. RAGフロー
 - ユーザー入力 → 関連ドキュメント検索
 - 検索結果 → コンテキスト構築
-- Phi-4 → GM応答生成
+- Phi-3.5 → GM応答生成
 
 ## データフロー（RAGの動作）
 
@@ -39,7 +39,7 @@ WebLLM（Microsoft Phi-4）とブラウザ内RAGを使用し、サーバー不�
 2. **埋め込み生成** → TF-IDFでクエリをベクトル化
 3. **ベクター検索** → メモリ内ストアから類似文書取得
 4. **コンテキスト構築** → 検索結果を整形
-5. **応答生成** → WebLLM (Phi-4) でGM応答生成
+5. **応答生成** → WebLLM (Phi-3.5) でGM応答生成
 6. **表示** → チャットUIに表示
 
 ## プロジェクト構造
@@ -99,7 +99,7 @@ GM: 酒場には冒険者が数人います。話しかけるなら
 ✅ **プライバシー保護** - データはブラウザ内のみ
 ✅ **オフライン対応** - モデルダウンロード後は接続不要
 ✅ **RAGで正確な応答** - 設定資料を検索して参照
-✅ **最新AI** - Microsoft Phi-4モデル使用
+✅ **最新AI** - Microsoft Phi-3.5 Miniモデル使用
 ✅ **高速** - WebGPUによる高速推論
 
 ## 今後の拡張例
@@ -119,7 +119,7 @@ GM: 酒場には冒険者が数人います。話しかけるなら
 
 ## 初回起動について
 
-初回アクセス時は**Microsoft Phi-4モデル**（約2.5GB）をダウンロードします。
+初回アクセス時は**Microsoft Phi-3.5 Miniモデル**（約2.3GB）をダウンロードします。
 
 - ダウンロード時間: 光回線で2〜5分程度
 - ブラウザキャッシュに保存されます
@@ -158,5 +158,5 @@ MIT
 ## 参考リンク
 
 - [WebLLM](https://webllm.mlc.ai/)
-- [Microsoft Phi-4](https://huggingface.co/microsoft/phi-4)
+- [Microsoft Phi-3.5](https://huggingface.co/microsoft/Phi-3.5-mini-instruct)
 - [WebGPU](https://www.w3.org/TR/webgpu/)
