@@ -8,6 +8,19 @@ import * as webllm from "https://esm.run/@mlc-ai/web-llm";
 let engine = null;
 let isModelLoaded = false;
 
+const modelCandidates = [
+    { id: "Phi-4", label: "Microsoft Phi-4" },
+    { id: "Phi-3.5-mini-instruct", label: "Microsoft Phi-3.5 Mini Instruct" },
+    { id: "Phi-3-mini-4k-instruct", label: "Microsoft Phi-3 Mini 4K Instruct" }
+];
+
+function setModelName(label) {
+    const modelName = document.getElementById('model-name');
+    if (modelName) {
+        modelName.textContent = label;
+    }
+}
+
 /**
  * 進捗表示の更新
  */
@@ -33,22 +46,38 @@ export async function initializeWebLLM() {
     try {
         updateProgress('WebLLMエンジンを初期化中...', 0);
 
-        // WebLLMエンジンの作成
-        engine = await webllm.CreateMLCEngine(
-            "Phi-4", // Microsoft Phi-4モデル
-            {
-                initProgressCallback: (progress) => {
-                    const percent = progress.progress * 100;
-                    updateProgress(progress.text, percent);
-                    console.log('Init progress:', progress);
-                }
+        let lastError = null;
+
+        for (const candidate of modelCandidates) {
+            try {
+                updateProgress(`${candidate.label} を読み込み中...`, 0);
+
+                // WebLLMエンジンの作成
+                engine = await webllm.CreateMLCEngine(candidate.id, {
+                    initProgressCallback: (progress) => {
+                        const percent = progress.progress * 100;
+                        updateProgress(progress.text, percent);
+                        console.log('Init progress:', progress);
+                    }
+                });
+
+                setModelName(candidate.label);
+                lastError = null;
+                break;
+            } catch (error) {
+                console.warn(`Failed to load model ${candidate.id}:`, error);
+                lastError = error;
             }
-        );
+        }
+
+        if (lastError) {
+            throw lastError;
+        }
 
         isModelLoaded = true;
         updateProgress('モデルのロード完了！', 100);
 
-        console.log('WebLLM initialized successfully with Phi-4');
+        console.log('WebLLM initialized successfully');
 
         // UI更新
         setTimeout(() => {
